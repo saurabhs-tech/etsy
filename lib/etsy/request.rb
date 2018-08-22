@@ -37,6 +37,7 @@ module Etsy
       @secret = parameters.delete(:access_secret) || Etsy.credentials[:access_secret]
       raise("Secure connection required. Please provide your OAuth credentials via :access_token and :access_secret in the parameters") if parameters.delete(:require_secure) && !secure?
       @multipart_request = parameters.delete(:multipart)
+      @request_has_body = parameters.delete(:reqbody)
       @resource_path = resource_path
       @resources = parameters.delete(:includes)
       if @resources.class == String
@@ -73,7 +74,11 @@ module Etsy
     end
 
     def put
-      client.put(endpoint_url)
+      if request_has_body?
+        client.put_with_body(endpoint_url(include_query: false), @parameters)
+      else
+        client.put(endpoint_url)
+      end
     end
     
     def delete
@@ -130,6 +135,10 @@ module Etsy
 
     def multipart?
       !!@multipart_request
+    end
+
+    def request_has_body?
+      @request_has_body
     end
 
     private

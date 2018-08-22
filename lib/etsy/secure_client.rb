@@ -93,6 +93,17 @@ module Etsy
       end
     end
 
+    def put_with_body(endpoint, params = {})
+      client = Net::HTTP.new(Etsy.host, Etsy.protocol == "http" ? 80 : 443)
+      client.use_ssl = true if Etsy.protocol == "https"
+      client.start do |http|
+        req = Net::HTTP::Put.new(endpoint)
+        add_body_data(req, params)
+        add_oauth(req)
+        res = http.request(req)
+      end
+    end
+
     private
 
     # Encodes the request as multipart
@@ -125,6 +136,22 @@ module Etsy
 
     def has_access_data?
       !@attributes[:access_token].nil? && !@attributes[:access_secret].nil?
+    end
+
+    # Encodes the put request for large parameter
+    def add_body_data(req, params)
+      req['Content-Type'] = 'application/x-www-form-urlencoded'
+      body = ''
+      params.each do |key, value|
+        body << "#{key}="
+        body << if value.is_a?(Array)
+                  CGI.escape(value.join(','))
+                else
+                  CGI.escape(value)
+                end
+        body << '&'
+      end
+      req.body = body
     end
 
   end
